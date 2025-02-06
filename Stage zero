@@ -1,1 +1,42 @@
+# Organizing the information using dictionaries and lists
 
+people = [
+    {
+        "Name": "Akeemat Ayinla",
+        "Slack Username": "Keemah",
+        "Email": "akeematayinla@gmail.com",
+        "Hobby": "Reading Novels",
+        "Country": "Nigeria",
+        "Discipline": "Veterinary Medicine",
+        "Programming Language": "R"
+    },
+    {
+        "Name": "Md Asif Mahmud Aumi",
+        "Slack Username": "Asif",
+        "Email": "contact.aumi@gmail.com",
+        "Hobby": "Travelling, Hiking",
+        "Country": "Turkiye",
+        "Discipline": "Agricultural Biotechnology",
+        "Programming Language": "Python"
+    },
+    {
+        "Name": "Felix Idowu",
+        "Slack Username": "Felix",
+        "Email": "idowufelix00@gmail.com",
+        "Hobby": "Football, Music",
+        "Country": "Nigeria",
+        "Discipline": "Biochemistry and Molecular Biology",
+        "Programming Language": "Python"
+    }
+]
+
+# Printing the organized information
+for person in people:
+    print(f"Name: {person['Name']}")
+    print(f"Slack Username: {person['Slack Username']}")
+    print(f"Email: {person['Email']}")
+    print(f"Hobby: {person['Hobby']}")
+    print(f"Country: {person['Country']}")
+    print(f"Discipline: {person['Discipline']}")
+    print(f"Programming Language: {person['Programming Language']}")
+    print("-" * 50)
