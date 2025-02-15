@@ -1,0 +1,85 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from scipy.optimize import brentq
+
+def logistic_growth(t, K, r, t0, lag_factor, exp_factor):
+    return K / (1 + np.exp(-r * (t - t0) * exp_factor)) * (1 - np.exp(-r * t * lag_factor))
+
+def generate_growth_curve(num_points=100, K=1.0, r=0.5, t0=10, 
+                          lag_range=(0.5, 2.0), exp_range=(0.5, 2.0), 
+                          noise_level=0.02):
+    t = np.linspace(0, 50, num_points)
+    
+    lag_factor = np.random.uniform(*lag_range)
+    exp_factor = np.random.uniform(*exp_range)
+    
+    y = logistic_growth(t, K, r, t0, lag_factor, exp_factor)
+    
+    noise = np.random.normal(0, noise_level, num_points)
+    y += noise
+    
+    y = np.maximum(y, 0)
+    
+    return t, y, K, r, t0, lag_factor, exp_factor
+
+def generate_growth_curves_df(num_curves=100, num_points=100):
+    df = pd.DataFrame()
+    params = []
+    
+    for i in range(num_curves):
+        t, y, K, r, t0, lag_factor, exp_factor = generate_growth_curve(num_points)
+        df[f'Curve_{i+1}'] = y
+        params.append((K, r, t0, lag_factor, exp_factor))
+    
+    df['Time'] = t
+    return df, params
+
+def time_to_80_percent(K, r, t0, lag_factor, exp_factor):
+    target = 0.8 * K
+    
+    def equation(t):
+        return logistic_growth(t, K, r, t0, lag_factor, exp_factor) - target
+    
+    try:
+        return brentq(equation, 0, 1000)  # Assuming growth won't take more than 1000 time units
+    except ValueError:
+        return np.nan  # Return NaN if the solution is not found
+
+# Generate the DataFrame with 100 growth curves
+df, params = generate_growth_curves_df(num_curves=100)
+
+# Calculate time to 80% of max growth for each curve
+times_to_80_percent = [time_to_80_percent(*param) for param in params]
+
+# Add the results to a new DataFrame
+results_df = pd.DataFrame({
+    'Curve': [f'Curve_{i+1}' for i in range(100)],
+    'Time_to_80_percent': times_to_80_percent
+})
+
+# Plot a few random curves and their 80% points for visualization
+plt.figure(figsize=(12, 6))
+for _ in range(5):
+    curve = np.random.choice(df.columns[:-1])
+    curve_index = int(curve.split('_')[1]) - 1
+    plt.plot(df['Time'], df[curve], label=f"{curve} (80% at {times_to_80_percent[curve_index]:.2f})")
+    
+    # Plot the 80% point
+    t80 = times_to_80_percent[curve_index]
+    y80 = df[curve].iloc[(np.abs(df['Time'] - t80)).idxmin()]
+    plt.plot(t80, y80, 'ro')
+
+plt.xlabel('Time')
+plt.ylabel('Population Size')
+plt.title('Sample Logistic Growth Curves with 80% Max Growth Points')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+# Display basic statistics of the time to 80% max growth
+print(results_df['Time_to_80_percent'].describe())
+
+# Save the results to a CSV file
+results_df.to_csv('time_to_80_percent_growth.csv', index=False)
+print("Results saved to 'time_to_80_percent_growth.csv'")
