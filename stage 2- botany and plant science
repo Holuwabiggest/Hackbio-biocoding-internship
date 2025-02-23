@@ -1,0 +1,75 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Load dataset
+file_path = r"C:\Users\ADMIN\Documents\Pesticide_treatment_data.txt"
+df = pd.read_csv(file_path, sep="\t")
+
+# Set the first column as index (metabolite names)
+df.set_index(df.columns[0], inplace=True)
+
+# Transpose the dataframe to have metabolites as index and conditions as columns
+df_transposed = df.T
+
+# Check for missing expected conditions
+conditions = ["WT_DMSO_1", "WT_pesticide_24h_1", "mutant_DMSO_1", "mutant_pesticide_24h_1"]
+missing_conditions = [cond for cond in conditions if cond not in df_transposed.columns]
+if missing_conditions:
+    raise KeyError(f"Missing expected conditions: {missing_conditions}")
+
+wt_dmso = df_transposed["WT_DMSO_1"]
+wt_24h = df_transposed["WT_pesticide_24h_1"]
+mutant_dmso = df_transposed["mutant_DMSO_1"]
+mutant_24h = df_transposed["mutant_pesticide_24h_1"]
+
+# Calculate ΔM for WT and Mutant
+df_transposed["ΔM_WT"] = wt_24h - wt_dmso
+df_transposed["ΔM_Mutant"] = mutant_24h - mutant_dmso
+
+# Drop NaN values before plotting
+df_transposed.dropna(subset=["ΔM_WT", "ΔM_Mutant"], inplace=True)
+
+# Scatter plot of ΔM_WT vs ΔM_Mutant
+plt.figure(figsize=(8, 6))
+sns.scatterplot(x=df_transposed["ΔM_WT"], y=df_transposed["ΔM_Mutant"], color="blue", alpha=0.7)
+
+# Fit y=x line
+x_vals = df_transposed["ΔM_WT"]
+plt.plot(x_vals, x_vals, color="black", linestyle="dashed", label="y = x")
+plt.legend()
+
+# Calculate residuals
+df_transposed["Residual"] = df_transposed["ΔM_Mutant"] - df_transposed["ΔM_WT"]
+cutoff = 0.3  # Define residual threshold
+
+# Color code points based on residuals
+df_transposed["Color"] = df_transposed["Residual"].apply(lambda x: "grey" if -cutoff <= x <= cutoff else "salmon")
+
+# Replot with colors
+plt.figure(figsize=(8, 6))
+sns.scatterplot(x=df_transposed["ΔM_WT"], y=df_transposed["ΔM_Mutant"], hue=df_transposed["Color"], alpha=0.7)
+plt.xlabel("ΔM_WT")
+plt.ylabel("ΔM_Mutant")
+plt.title("Scatter plot of ΔM for WT vs Mutants with Residuals")
+
+# Extract significant metabolites (outliers)
+outliers = df_transposed[df_transposed["Color"] == "salmon"].index[:6].tolist()
+
+# Generate time-course plots for 6 metabolites
+time_points = ["WT_DMSO_1", "WT_pesticide_8h_1", "WT_pesticide_24h_1"]
+plt.figure(figsize=(12, 8))
+
+for i, metabolite in enumerate(outliers):
+    plt.subplot(2, 3, i+1)
+    plt.plot(time_points, df_transposed.loc[metabolite, time_points], marker="o", linestyle="-", label=metabolite)
+    plt.title(metabolite)
+    plt.xlabel("Time")
+    plt.ylabel("Metabolic Response")
+    plt.legend()
+
+plt.tight_layout()
+plt.show()
+
+# Return significant metabolites
+outliers
